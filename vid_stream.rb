@@ -1,22 +1,14 @@
 require 'headless'
 require 'selenium-webdriver'
-require 'byebug'
+require 'sinatra'
 
 class VidStream
   
-  def convert_to_mp4(filename)
-    cmd = <<-SH
-     avconv -i #{filename} -c:v libx264 \
-     #{filename.gsub(".mov", ".mp4")}
-    SH
-    system(cmd)
-  end
-
   def capture_video(video_path, &blk)
+    `rm #{video_path}` rescue nil
     @headless.video.start_capture
     blk.call
     @headless.video.stop_and_save(video_path)
-#    convert_to_mp4(video_path)
   end
 
   def headless(keep_alive=false, &content_blk)
@@ -41,13 +33,8 @@ def init
   video_path = ARGV.shift || "test.mp4"
   vid_stream = VidStream.new
   vid_stream.headless(keep_alive=true) do
-    vid_stream.capture_video(video_path) do
-      vid_stream.driver.navigate.to("http://google.com")
-      puts vid_stream.driver.title
-    end
-    vid_stream.capture_video("test2.mp4") do
-      vid_stream.driver.navigate.to("gmail.com")
-      puts vid_stream.driver.title
+    get '/' do
+      erb :root
     end
   end
 end

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Video.js | HTML5 Video Player</title>
+  <script src="https://code.jquery.com/jquery-2.x-git.min.js"></script>
+</head>
+<body>
+
+<form action="#">
+<input type="text" placeholder="page">
+<input type="submit" value="go">
+</form>
+
+<video id="player" controls>
+  <source src="test.mp4" />
+</video>
+
+<script>
+$(function(){
+  $("form").on("submit", function(e){
+    var page = $(e.currentTarget).find("input").value
+  })
+})
+</script>
+
+</body>
+</html>
