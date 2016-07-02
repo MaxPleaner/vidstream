@@ -44,18 +44,31 @@ class VidStream
 end
 
 
+class Interface
+  attr_reader :headless, :driver, :vidstream
+  def initialize(headless, driver, vidstream)
+    @headless = headless
+    @driver = driver
+    @vidstream = vidstream
+  end
+  def process_cmd(cmd)
+    url = "http://#{cmd}.com"
+    video_path = "public/#{SecureRandom.urlsafe_base64}.mp4"
+    vidstream.capture_video(video_path) do
+      driver.navigate.to(url)
+    end
+    return video_path
+  end
+end
+
 if __FILE__ == $0
   headless_gui = HeadlessGUI.new(keep_alive=true) do |headless_gui|
     $headless = RunningHeadlessServer = headless_gui.headless
     $driver = driver = headless_gui.driver
     $vidstream = VidStream.new($headless, $driver)
+    interface = Interface.new($headless, $driver, $vidstream)
     loop do
-      url = "http://#{gets.chomp}.com"
-      video_path = "public/#{SecureRandom.urlsafe_base64}.mp4"
-      $vidstream.capture_video(video_path) do
-        $driver.navigate.to(url)
-      end
-      puts video_path
+      puts interface.process_cmd(gets.chomp)
     end
   end
 end
