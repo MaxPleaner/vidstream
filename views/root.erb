@@ -4,24 +4,44 @@
   <title>Video.js | HTML5 Video Player</title>
   <script src="https://code.jquery.com/jquery-2.x-git.min.js"></script>
 </head>
-<body>
 
-<form action="#">
-<input type="text" placeholder="page">
-<input type="submit" value="go">
-</form>
 
-<video id="player" controls>
-  <source src="test.mp4" />
+  <body>
+     <h1>Simple Echo & Chat Server</h1>
+     <form id="form">
+       <input type="text" id="input" value="send a message"></input>
+     </form>
+     <div id="msgs"></div>
+
+<video width="320" height="240" controls>
+  <source src="test.mp4" type="video/mp4">
 </video>
 
-<script>
-$(function(){
-  $("form").on("submit", function(e){
-    var page = $(e.currentTarget).find("input").value
-  })
-})
-</script>
+  </body>
 
-</body>
+  <script type="text/javascript">
+    window.onload = function(){
+      (function(){
+        var show = function(el){
+          return function(msg){ el.innerHTML = msg + '<br />' + el.innerHTML; }
+        }(document.getElementById('msgs'));
+
+        var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
+        ws.onopen    = function()  { show('websocket opened'); };
+        ws.onclose   = function()  { show('websocket closed'); }
+        ws.onmessage = function(m) { show('websocket message: ' +  m.data); };
+
+        var sender = function(f){
+          var input     = document.getElementById('input');
+          input.onclick = function(){ input.value = "" };
+          f.onsubmit    = function(){
+            ws.send(input.value);
+            input.value = "send a message";
+            return false;
+          }
+        }(document.getElementById('form'));
+      })();
+    }
+  </script>
+
 </html>
