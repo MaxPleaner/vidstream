@@ -3,29 +3,14 @@ require 'selenium-webdriver'
 require 'byebug'
 require 'securerandom'
 
+require "./headless_gui"
+require "./command_interpreter"
+require "./command_runner"
+
 at_exit do
-  defined?(RunningHeadlessServer) && RunningHeadlessServer.destroy_without_sync
+  defined?($RunningHeadlessServer) && $RunningHeadlessServer.destroy_without_sync
 end
 
-class HeadlessGUI
-  DisplayNumber = 100 # can be any number, facilitates re-attaching from Sinatra scope
-  attr_reader :headless, :driver
-  def initialize(keep_alive=false, &blk)
-    @headless = Headless.new(
-      display: self.class::DisplayNumber,
-      reuse_display: true,
-      destroy_at_exit: false,
-      video: {
-        frame_rate: 12,
-        codec: 'libx264',
-      }
-    )
-    @headless.start
-    @driver = Selenium::WebDriver.for(:firefox)
-    blk&.call(self)
-    @headless.destroy unless keep_alive
-  end
-end
 
 class VidStream
   
@@ -40,35 +25,39 @@ class VidStream
     blk.call
     @headless.video.stop_and_save(video_path)
   end
-
+  
 end
 
 
-class Interface
-  attr_reader :headless, :driver, :vidstream
-  def initialize(headless, driver, vidstream)
-    @headless = headless
-    @driver = driver
-    @vidstream = vidstream
-  end
-  def process_cmd(cmd)
-    url = "http://#{cmd}.com"
-    video_path = "public/#{SecureRandom.urlsafe_base64}.mp4"
-    vidstream.capture_video(video_path) do
-      driver.navigate.to(url)
-    end
-    return video_path
-  end
-end
 
 if __FILE__ == $0
+  
+  # Run in a headless scope
   headless_gui = HeadlessGUI.new(keep_alive=true) do |headless_gui|
-    $headless = RunningHeadlessServer = headless_gui.headless
-    $driver = driver = headless_gui.driver
-    $vidstream = VidStream.new($headless, $driver)
-    interface = Interface.new($headless, $driver, $vidstream)
+    
+    # Initialize VidStream with HeadlessGUI components
+    headless = headless_gui.headless
+    driver = headless_gui.driver
+    vidstream = VidStream.new(headless, driver)
+
+    # Set a global variable which is referenced in the at_exit block
+    # to ensure that the headless server stops when the script stops
+    $RunningHeadlessServer = headless
+    
+    # Pass along dependencies to CommandInterpreter and CommandRunner
+    cmd_interpreter = CommandInterpreter.new(headless, driver, vidstream)
+    cmd_runner = CommandRunner.new(headless, driver, vidstream)
+    cmd_interpreter.add_verbs(CommandRunner::KnownCommands.keys)
+    
+    # Start an I/O loop
     loop do
-      puts interface.process_cmd(gets.chomp)
+      input = gets.chomp
+      cmd_with_args = cmd_interpreter.process_cmd(input)
+      byebug
+      output = cmd_runner.run_and_record(cmd=cmd_with_args.shift, args=cmd_with_args)
+      puts output
     end
+  
   end
+  
 end
