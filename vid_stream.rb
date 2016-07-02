@@ -1,6 +1,7 @@
 require 'headless'
 require 'selenium-webdriver'
 require 'byebug'
+require 'securerandom'
 
 at_exit do
   defined?(RunningHeadlessServer) && RunningHeadlessServer.destroy_without_sync
@@ -35,7 +36,6 @@ class VidStream
   end
 
   def capture_video(video_path, &blk)
-    `rm #{video_path}` rescue nil
     @headless.video.start_capture
     blk.call
     @headless.video.stop_and_save(video_path)
@@ -46,11 +46,16 @@ end
 
 if __FILE__ == $0
   headless_gui = HeadlessGUI.new(keep_alive=true) do |headless_gui|
-    headless = RunningHeadlessServer = headless_gui.headless
+    $headless = RunningHeadlessServer = headless_gui.headless
     $driver = driver = headless_gui.driver
-  end
-  loop do
-    input = gets.chomp
-    puts input
+    $vidstream = VidStream.new($headless, $driver)
+    loop do
+      url = "http://#{gets.chomp}.com"
+      video_path = "public/#{SecureRandom.urlsafe_base64}.mp4"
+      $vidstream.capture_video(video_path) do
+        $driver.navigate.to(url)
+      end
+      puts video_path
+    end
   end
 end

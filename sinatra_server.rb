@@ -40,7 +40,12 @@ class SinatraServer
       settings.sockets.delete(ws)
     end
     def on_message(ws, settings, msg)
-      EM.next_tick { settings.sockets.each{|s| s.send(msg) } }
+      vidstream_in.write(msg + "\n")
+      scrapped_line = vidstream_out.gets # scrap a line
+      vid_url = vidstream_out.gets || ""
+      vid_url = vid_url.split("public/")[-1].
+                        split("\r\n")[0]
+      EM.next_tick { settings.sockets.each{|s| s.send(vid_url) } }
     end
   end
 end
@@ -71,7 +76,5 @@ ExternalCommandRunner.with_process_io(vidstream_cmd) do |input, output|
       end
     end
   end
-  byebug
   MyApp.run!
-  # sleep 5000000
 end
