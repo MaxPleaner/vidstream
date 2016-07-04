@@ -16,4 +16,5 @@ class HeadlessGUI
     blk&.call(self)
     @headless.destroy unless keep_alive
   end
+  
 end

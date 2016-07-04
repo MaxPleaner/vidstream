@@ -1,5 +1,5 @@
 module ExternalCommandRunner
-  VidStreamCmd = "ruby vid_stream.rb"
+  VidStreamCmd = "ruby vidstream/start_vidstream.rb"
   
   def self.with_process_io(cmd, &blk)
     PTY.spawn(VidStreamCmd) do |output, input|
