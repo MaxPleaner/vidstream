@@ -37,7 +37,7 @@ def find_lexicon(word_type)
   word_type.to_s.eql?("verb") ? VerbLexicon : NounLexicon
 end
 Lexicon[:on_destroy_hook] = ->(*args) { word_removed(*args) }
-Lexicon[:on_create_or_update_hook] = ->(*args) {  word_created_or_updated(*args) }
+Lexicon[:on_create_or_update_hook] = ->(*args) {  word_created(*args) }
 
 # Make sure the headless server stops when the script stops
 at_exit do
@@ -58,6 +58,7 @@ headless_gui = HeadlessGUI.new(keep_alive=true) do |headless_gui|
 
   # Error handler: show errors as Javascript alerts in the selenium browser
   $driver.define_singleton_method(:raise_error) do |text, error_obj|
+    byebug
     puts "\n\n**************\n\nERROR : #{text} : #{error_obj}\n\n**************\n\n"
     $driver.execute_script("alert(arguments[0])", text)
   end

@@ -11,7 +11,27 @@
      <button id="speakButton">Speak command</button>
      <br> <b id="speakNow">Speak Now </b>
      
-      <hr>
+     <hr>
+     <div id="new_word">
+       <form action="#">
+         <input type="text" name="type" placeholder="type (verb or noun)" <br>
+         <input name="name" type="text" placeholder="name"><br>
+         <textarea name="action" placeholder="action (return a ruby lambda)"></textarea><br>
+         <input type="submit" value="add word">
+       </form>
+     </div>
+     
+     <div id="words_list">
+        <div id="template">
+          <br><b class="name"></b>
+          <b class="type"></b>
+          <a href="" class="remove_word"></a>
+          <br>
+        </div>
+     </div>
+     
+     <hr>
+     
       <h4> Messages </h4>
      <div id="msgs"></div>
 
@@ -36,33 +56,109 @@ $(function(){
     video.play()
   }
   
-    window.onload = function(){
-      (function(){
-        var show = function(el){
-          return function(msg){ el.innerHTML = msg + '<br />' + el.innerHTML; }
-        }(document.getElementById('msgs'));
+  window.onload = function(){
+    (function(){
 
-        var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
-        ws.onopen    = function()  { show('websocket opened'); };
-        ws.onclose   = function()  { show('websocket closed'); }
-        ws.onmessage = function(m) {
+      var show = function(el){
+        return function(msg){ el.innerHTML = msg + '<br />' + el.innerHTML; }
+      }(document.getElementById('msgs'));
+
+      var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
+      ws.onopen    = function()  { show('websocket opened'); };
+      ws.onclose   = function()  { show('websocket closed'); }
+      ws.onmessage = function(m) {
+        if (m.data.includes("mp4")) {
           SetVideoSrc(m.data)
-        };
+        } else {
+          $("#msgs").append($(`<li>${m.data}</li>`))
+        }
+      };
 
       window.testSocket = ws
 
-        $("#speakButton").on("click", function(e){
-          recognition.onresult = function(event) {
-            result = event.results[0][0].transcript
-            ws.send(result)
-            $("#speakNow").hide()
-          }
-          recognition.start();
-          $("#speakNow").show()
+      $("#speakButton").on("click", function(e){
+        recognition.onresult = function(event) {
+          result = event.results[0][0].transcript
+          console.log(`TRANSCRIPT: ${result}`)
+          ws.send(`browser_cmd ${result}`)
+          $("#speakNow").hide()
+        }
+        recognition.start();
+        $("#speakNow").show()
+      })
+        
+      function appendToDom(word) {
+        var $template = $("#template").clone()
+        $template.attr("id", "")
+        $template.attr("class", "word")
+        $("#words_list").append($template)
+        $template.find(".name").text(word['name'])
+        $template.find(".type").html(word['type'])
+        $template.find(".remove_word").text("remove word")
+        removeWordListener()
+      }
+      
+      $("#new_word").find("form").on("submit", function(e){
+        var $el = $(e.currentTarget)
+        e.preventDefault()
+        var name = $el.find("[name='name']").val()
+        var type = $el.find("[name='type']").val()
+        var action = $el.find("[name='action']").val()
+        ws.send(
+          "add_word " +
+          type + " " +
+          name + " " +
+          JSON.stringify(action)
+        )
+        word = {
+          name: name,
+          type: type
+        }
+        appendToDom(word)
+      })
+      
+      function removeWordListener() {
+        $("#words_list").find(".remove_word").on("click", function(e){
+          var $el = $(e.currentTarget)
+          var $parent = $el.parent(".word")
+          var name = $parent.find(".name").text()
+          var type = $parent.find(".type").text()
+          ws.send(
+            "remove_word " +
+            type + " " +
+            name
+          )
         })
-          
-      })()
-    }
+      }
+      
+      removeWordListener()
+      
+      <% wordInit = {verbs: [], nouns: []} %>
+      <% Verb.all.each do |verb| %>
+      <%   wordInit[:verbs] << verb.attributes %>
+      <% end %>
+      <% Noun.all.each do |noun| %>
+      <%   wordInit[:nouns] << noun.attributes %>
+      <% end %>
+      <% wordInit[:nouns] = wordInit[:nouns].map do |word| %>
+      <%   word.merge(type: 'noun') %>
+      <% end %>
+      <% wordInit[:verbs] = wordInit[:verbs].map do |word| %>
+      <%   word.merge(type: 'verb') %>
+      <% end %>
+      <% wordInit = wordInit.to_json %>
+      <% %>
+      
+      window.wordInit = <%= wordInit %>
+      for( var word of wordInit['verbs'] ) {
+        appendToDom(word)
+      }
+      for( var word of wordInit['nouns'] ) {
+        appendToDom(word)
+      }
+      
+    })()
+  }
     
 })
 

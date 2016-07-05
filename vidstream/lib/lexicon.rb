@@ -6,11 +6,17 @@
 Lexicon = {}
 Lexicon[:verb_class] = Verb
 Lexicon[:noun_class] = Noun
-["noun", "verb"].each do |word_type|
-  Lexicon[:"#{word_type}s"] = Lexicon[:"#{word_type}_class"].all.reduce({}) do |words, word|
-    words.tap { |words| words[word.name.to_sym] = eval(word.action) }
+
+Lexicon.define_singleton_method(:reload) do
+  delete Lexicon[:verbs]
+  delete Lexicon[:nouns]
+  ["noun", "verb"].each do |word_type|
+    Lexicon[:"#{word_type}s"] = Lexicon[:"#{word_type}_class"].all.reduce({}) do |words, word|
+      words.tap { |words| words[word.name.to_sym] = eval(word.action) }
+    end
   end
 end
+Lexicon.reload
 
 # Lexicon.get_noun calls the proc for a noun
 Lexicon.define_singleton_method(:get_noun) do |noun, *args|
