@@ -1,6 +1,5 @@
 # Uncomment this to show logs from DataMapper
-# WARNING: uncommenting this will break the selenium server
-# DataMapper::Logger.new($stdout, :debug)
+DataMapper::Logger.new($stdout, :debug)
 
 # Use SQLite database
 DataMapper.setup(:default, 'sqlite:///home/max/Downloads/vidstream/vidstream.sqlite3')
@@ -17,10 +16,12 @@ class Noun
   property :created_at, DateTime
 
   after :save do |record|
-    defined?(record.class.custom_save_hook) && record.class.custom_save_hook(record)
+    FayeClient.publish_save(record)
+    true
   end
   after :destroy do |record|
-    defined?(record.class.custom_destroy_hook) && record.class.custom_destroy_hook(record)
+    FayeClient.publish_destroy(record)
+    true
   end
 end
 
@@ -32,11 +33,11 @@ class Verb
   property :created_at, DateTime
   
   after :save do |record|
-    defined?(record.class.custom_save_hook) && record.class.custom_save_hook(record)
+    FayeClient.publish_save(record)
     true
   end
   after :destroy do |record|
-    defined?(record.class.custom_destroy_hook) && record.class.custom_destroy_hook(record)
+    FayeClient.publish_destroy(record)
     true
   end
 end

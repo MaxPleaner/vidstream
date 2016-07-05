@@ -12,7 +12,6 @@ Lexicon[:noun_class] = Noun
   end
 end
 
-
 # Lexicon.get_noun calls the proc for a noun
 Lexicon.define_singleton_method(:get_noun) do |noun, *args|
   self[:nouns][noun.to_sym].call(*args) rescue $driver.raise_error("Error getting noun: #{noun}")
@@ -33,9 +32,9 @@ end
 # Forward the results to other listeners.
 ["verb", "noun"].each do |word_type|
   Lexicon[:"#{word_type}_class"].define_singleton_method(:custom_save_hook) do |record|
-    Lexicon[:on_create_or_update_hook].call(word_type, record)
+    Lexicon[:on_create_or_update_hook]&.call(word_type, record)
   end
   Lexicon[:"#{word_type}_class"].define_singleton_method(:custom_destroy_hook) do |record|
-    Lexicon[:on_destroy_hook].call(word_type, record)
+    Lexicon[:on_destroy_hook]&.call(word_type, record)
   end
 end
