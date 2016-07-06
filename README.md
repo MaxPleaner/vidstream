@@ -33,6 +33,10 @@ Code organization:
 
 Hopefully the comments in the source should give enough explanation to understand what's going on.
 
+### Usage
+
+  Install the dependencies, then run `ruby start_server.rb
+
 ### Todo
 
 * make a gemfile
