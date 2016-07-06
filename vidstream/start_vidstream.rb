@@ -20,10 +20,6 @@ require 'eventmachine'           # An event loop, used for Faye pub-sub
   ]),
 ])
 
-# Expose Lexicon to sentence_interpreter's VerbLexicon and NounLexicon classes
-# This sets up the initial state of the interpreter to mirror the database.
-Lexicon.copy_self_to(verbs: VerbLexicon, nouns: NounLexicon)
-
 # Make sure the headless server stops when the script stops
 at_exit do
   defined?(RunningHeadlessServer) && RunningHeadlessServer.destroy_without_sync
@@ -43,9 +39,15 @@ headless_gui = HeadlessGUI.new(keep_alive=true) do |headless_gui|
   # Usage example (when called from a verb's 'action' proc):
   # $driver.raise_error("There was an error.", other_data=nil)
   $driver.define_singleton_method(:raise_error) do |text, error_obj|
-    puts "\n\n**************\n\nERROR : #{text} : #{error_obj}\n\n**************\n\n"
-    $driver.execute_script("alert(arguments[0])", text)
+    $driver.execute_script("alert('there was an error')")
   end
+  
+  # Get the initial state from the database
+  Lexicon.reload
+  
+  # Expose Lexicon to sentence_interpreter's VerbLexicon and NounLexicon classes
+  # This sets up the initial state of the interpreter to mirror the database.
+  Lexicon.copy_self_to(verbs: VerbLexicon, nouns: NounLexicon)
   
   # Run this block if this file is executed directly (not required)
   if __FILE__ == $0

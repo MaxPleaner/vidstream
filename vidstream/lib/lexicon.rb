@@ -1,10 +1,10 @@
 
 # Lexicon object is a hash which has singleton methods added to it.
-# The actual definitions are stored in the database.
+# The actual command definitions are stored in the database.
 
 # The lexicons used by sentence_interpreter are VerbLexicon and NounLexicon.
 # To update the sentence_interpreter, first call Lexicon.reload to get the state from the database
-# then use Lexicon.copy_self_to(verbs: VerbLexicon, nouns: NounLexicon)
+# then use Lexicon.copy_self_to(verbs: VerbLexicon, nouns: NounLexicon).
 
 Lexicon = {}
 Lexicon[:verb_class] = Verb
@@ -16,13 +16,30 @@ Lexicon.define_singleton_method(:reload) do
   delete Lexicon[:nouns]
   ["noun", "verb"].each do |word_type|
     Lexicon[:"#{word_type}s"] = Lexicon[:"#{word_type}_class"].all.reduce({}) do |words, word|
-      words.tap { |words| words[word.name.to_sym] = eval(word.action) }
+      
+      begin
+
+        # In the database, the 'action' attribute of words is a text representation of a proc,
+        # i.e. { action: "->(){'return val'}" }
+        # When loading the words into Lexicon from the database,
+        # evaluate all these strings into Proc objects.
+        words.tap { |words| words[word.name.to_sym] = eval(word.action) }
+
+      rescue Exception => e # SyntaxError is not a descendent of StandardError,
+                              # so rescue won't catch it by default.
+                              # Without rescuing SyntaxError, calling eval on an invalid command string
+                              # will halt the process.
+        
+        # If there is an error, set the action to a empty proc
+        word.update(action: "->(){}")
+        delete words[word.name.to_sym]
+        words
+        
+      end
+      
     end
   end
 end
-
-# Get the initial state from the database
-Lexicon.reload
 
 # Lexicon.get_noun calls the proc for a noun
 Lexicon.define_singleton_method(:get_noun) do |noun, *args|

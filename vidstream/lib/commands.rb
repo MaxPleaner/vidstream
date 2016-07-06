@@ -5,7 +5,7 @@ module Commands
   
   # Print all the words in the lexicon
   def show_lexicon
-    "#{NounLexicon}#{VerbLexicon}".gsub("\n", " ")
+    "Verbs: #{VerbLexicon.keys}, Nouns: #{NounLexicon.keys}".gsub("\n", " ")
   end
   
   # Run a firefox command in headles scope, record it to video, and return the video's filepath
@@ -27,15 +27,16 @@ module Commands
   def add_word(command_parts)
     type = command_parts.shift
     name = command_parts.shift
-    action = command_parts.shift
+    action = command_parts.join(" ")
     attrs = { name: name, action: action }
     record_class = type.capitalize.constantize
     sleep 1 # # wait until server creates record
-    matching_record = record_class.first(name: name)
-    new_word = matching_record&.update(attrs) || record_class.create(attrs)
+    record = record_class.first(name: name)
+    record.update(attrs) if record
+    record ||= record_class.new(attrs).tap { |r| r.save }
     Lexicon.reload
     Lexicon.copy_self_to(verbs: VerbLexicon, nouns: NounLexicon)
-    "#{new_word.attributes}".gsub("\n", " ")
+    "#{record.attributes}".gsub("\n", " ")
   end
   
   # Remove a word from the lexicon

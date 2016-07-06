@@ -17,16 +17,18 @@
        <form action="#">
          <input type="text" name="type" placeholder="type (verb or noun)" <br>
          <input name="name" type="text" placeholder="name"><br>
-         <textarea name="action" placeholder="action (return a ruby lambda)"></textarea><br>
+         <textarea cols='60' rows='10' name="action" placeholder="action (return a ruby lambda)"></textarea><br>
          <input type="submit" value="add word">
        </form>
      </div>
      
      <div id="words_list">
         <div id="template">
-          <br><b class="name"></b>
-          <b class="type"></b>
-          <a href="" class="remove_word"></a>
+          <br><div class="name"></div>
+          <div class="type"></div>
+          <div class="action"></div>
+          <a href="#" class="remove_word"></a>
+          <a href="#" class="edit_word"></a>
           <br>
         </div>
      </div>
@@ -96,8 +98,11 @@ $(function(){
         $("#words_list").append($template)
         $template.find(".name").text(word['name'])
         $template.find(".type").html(word['type'])
+        $template.find(".action").html(word['action'])
         $template.find(".remove_word").text("remove word")
+        $template.find(".edit_word").text("edit word")
         removeWordListener()
+        editWordListener()
       }
       
       $("#new_word").find("form").on("submit", function(e){
@@ -110,25 +115,46 @@ $(function(){
           "add_word " +
           type + " " +
           name + " " +
-          JSON.stringify(action)
+          action
         )
         word = {
           name: name,
-          type: type
+          type: type,
+          action: action
         }
         appendToDom(word)
       })
       
-      function removeWordListener() {
-        $("#words_list").find(".remove_word").on("click", function(e){
+      function getWordObjectFromDOM($word) {
+          var name = $word.find(".name").text()
+          var type = $word.find(".type").text()
+          var action = $word.find(".action").text()
+          return { name: name, type: type, action: action }
+      }
+      
+      function editWordListener() {
+        $("#words_list").find(".edit_word").off("click").on("click", function(e){
           var $el = $(e.currentTarget)
-          var $parent = $el.parent(".word")
-          var name = $parent.find(".name").text()
-          var type = $parent.find(".type").text()
+          var word = getWordObjectFromDOM($el.parent(".word"))
+          var $form = $("#new_word").find("form")
+          $form.find("input[name='type']").val(word.type)
+          $form.find("textarea[name='action']").val(word.action)
+          $form.find("input[name='name']").val(word.name)
+          scrollTo(0,0)
+          return false
+        })
+      }
+     
+      function removeWordListener() {
+        $("#words_list").find(".remove_word").off("click").on("click", function(e){
+          var $el = $(e.currentTarget)
+          var $word = $el.parent(".word")
+          var word = getWordObjectFromDOM($word)
+          $word.remove()
           ws.send(
             "remove_word " +
-            type + " " +
-            name
+            word.type + " " +
+            word.name
           )
         })
       }

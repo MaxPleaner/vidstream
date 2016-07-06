@@ -24,7 +24,7 @@ class CommandProcessor
   def process_original_command(original_command='')
     
     # Split the command at whitespace
-    command_parts = original_command.split(" ")
+    command_parts = original_command.split
     
     # The first word is the 'metacommand', and determines how the rest of the command should be interpreted
     metacommand = command_parts.shift
