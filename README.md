@@ -31,6 +31,8 @@ Code organization:
 - [`./views/components/`](./views/components/): view partials (HTML fragments with embedded Ruby)
 - [`./views/scripts/`](./views/scripts/): script partials (Javascript fragments) 
 
+Hopefully the comments in the source should give enough explanation to understand what's going on.
+
 ### Todo
 
 * make a gemfile
