@@ -41,7 +41,6 @@ A small part of this project was extracted into a gem: [sentence_interpreter](ht
 
 ### Todo
 
-* make a gemfile
 * add CSS
 * stream video using fragmented MP4
 * test edge cases
