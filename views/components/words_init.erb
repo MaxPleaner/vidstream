@@ -1,0 +1,23 @@
+<% wordInit = {verbs: [], nouns: []} %>
+<% Verb.all.each do |verb| %>
+<%   wordInit[:verbs] << verb.attributes %>
+<% end %>
+<% Noun.all.each do |noun| %>
+<%   wordInit[:nouns] << noun.attributes %>
+<% end %>
+<% wordInit[:nouns] = wordInit[:nouns].map do |word| %>
+<%   word.merge(type: 'noun') %>
+<% end %>
+<% wordInit[:verbs] = wordInit[:verbs].map do |word| %>
+<%   word.merge(type: 'verb') %>
+<% end %>
+<% wordInit = wordInit.to_json %>
+<% %>
+
+window.wordInit = <%= wordInit %>
+for( var word of wordInit['verbs'] ) {
+  appendToDom(word)
+}
+for( var word of wordInit['nouns'] ) {
+  appendToDom(word)
+}

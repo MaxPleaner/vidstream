@@ -9,187 +9,33 @@
 
   <body>
   
-     <button id="speakButton">Speak command</button>
-     <br> <b id="speakNow">Speak Now </b>
-     
-     <hr>
-     <div id="new_word">
-       <form action="#">
-         <input type="text" name="type" placeholder="type (verb or noun)" <br>
-         <input name="name" type="text" placeholder="name"><br>
-         <textarea cols='60' rows='10' name="action" placeholder="action (return a ruby lambda)"></textarea><br>
-         <input type="submit" value="add word">
-       </form>
-     </div>
-     
-     <div id="words_list">
-        <div id="template">
-          <br><div class="name"></div>
-          <div class="type"></div>
-          <div class="action"></div>
-          <a href="#" class="remove_word"></a>
-          <a href="#" class="edit_word"></a>
-          <br>
-        </div>
-     </div>
-     
-     <hr>
-     
-      <h4> Messages </h4>
-     <div id="msgs"></div>
-
+    <%= erb :"components/speak_button" %>
     <hr>
+    <%= erb :"components/new_word" %>
+    <%= erb :"components/words_list" %>
+    <hr>
+    <%= erb :"components/messages" %>
+    <hr>
+    <%= erb :"components/video_player" %>
     
-    <video width="320" height="240" controls>
-      <source src="test.mp4" type="video/mp4">
-    </video>
-
   </body>
 
 <script type="text/javascript">
-
 $(function(){
-
-  window.recognition = new webkitSpeechRecognition();
   
-  $("#speakNow").hide()
+  <%# import a bunch of javascript files %>
+  <% [ %>
+  <%   "speech", "set_video_src", "websockets", "append_to_dom", %>
+  <%   "new_word", "get_word_object_from_dom", "edit_word_listener", %>
+  <%   "remove_word_listener" %>
+  <% ].each do |script_name| %>
+    <%= File.read(File.join('views', 'scripts', "#{script_name}.js")) %>
+  <% end %>
   
-  function SetVideoSrc(filepath) {
-    var video = $("video")[0]
-    video.src = filepath
-    video.play()
-  }
-  
-  window.onload = function(){
-    (function(){
+  <%# Initialize the page with a list of words %>
+  <%= erb :"components/words_init" %>
 
-      var show = function(el){
-        return function(msg){ el.innerHTML = msg + '<br />' + el.innerHTML; }
-      }(document.getElementById('msgs'));
-
-      var ws       = new WebSocket('ws://' + window.location.host + window.location.pathname);
-      ws.onopen    = function()  { show('websocket opened'); };
-      ws.onclose   = function()  { show('websocket closed'); }
-      ws.onmessage = function(m) {
-        if (m.data.includes("mp4")) {
-          SetVideoSrc(m.data)
-        } else {
-          $("#msgs").append($(`<li>${m.data}</li>`))
-        }
-      };
-
-      window.testSocket = ws
-
-      $("#speakButton").on("click", function(e){
-        recognition.onresult = function(event) {
-          result = event.results[0][0].transcript
-          console.log(`TRANSCRIPT: ${result}`)
-          ws.send(`browser_cmd ${result}`)
-          $("#speakNow").hide()
-        }
-        recognition.start();
-        $("#speakNow").show()
-      })
-        
-      function appendToDom(word) {
-        var $template = $("#template").clone()
-        $template.attr("id", "")
-        $template.attr("class", "word")
-        $("#words_list").append($template)
-        $template.find(".name").text(word['name'])
-        $template.find(".type").html(word['type'])
-        $template.find(".action").html(word['action'])
-        $template.find(".remove_word").text("remove word")
-        $template.find(".edit_word").text("edit word")
-        removeWordListener()
-        editWordListener()
-      }
-      
-      $("#new_word").find("form").on("submit", function(e){
-        var $el = $(e.currentTarget)
-        e.preventDefault()
-        var name = $el.find("[name='name']").val()
-        var type = $el.find("[name='type']").val()
-        var action = $el.find("[name='action']").val()
-        ws.send(
-          "add_word " +
-          type + " " +
-          name + " " +
-          action
-        )
-        word = {
-          name: name,
-          type: type,
-          action: action
-        }
-        appendToDom(word)
-      })
-      
-      function getWordObjectFromDOM($word) {
-          var name = $word.find(".name").text()
-          var type = $word.find(".type").text()
-          var action = $word.find(".action").text()
-          return { name: name, type: type, action: action }
-      }
-      
-      function editWordListener() {
-        $("#words_list").find(".edit_word").off("click").on("click", function(e){
-          var $el = $(e.currentTarget)
-          var word = getWordObjectFromDOM($el.parent(".word"))
-          var $form = $("#new_word").find("form")
-          $form.find("input[name='type']").val(word.type)
-          $form.find("textarea[name='action']").val(word.action)
-          $form.find("input[name='name']").val(word.name)
-          scrollTo(0,0)
-          return false
-        })
-      }
-     
-      function removeWordListener() {
-        $("#words_list").find(".remove_word").off("click").on("click", function(e){
-          var $el = $(e.currentTarget)
-          var $word = $el.parent(".word")
-          var word = getWordObjectFromDOM($word)
-          $word.remove()
-          ws.send(
-            "remove_word " +
-            word.type + " " +
-            word.name
-          )
-        })
-      }
-      
-      removeWordListener()
-      
-      <% wordInit = {verbs: [], nouns: []} %>
-      <% Verb.all.each do |verb| %>
-      <%   wordInit[:verbs] << verb.attributes %>
-      <% end %>
-      <% Noun.all.each do |noun| %>
-      <%   wordInit[:nouns] << noun.attributes %>
-      <% end %>
-      <% wordInit[:nouns] = wordInit[:nouns].map do |word| %>
-      <%   word.merge(type: 'noun') %>
-      <% end %>
-      <% wordInit[:verbs] = wordInit[:verbs].map do |word| %>
-      <%   word.merge(type: 'verb') %>
-      <% end %>
-      <% wordInit = wordInit.to_json %>
-      <% %>
-      
-      window.wordInit = <%= wordInit %>
-      for( var word of wordInit['verbs'] ) {
-        appendToDom(word)
-      }
-      for( var word of wordInit['nouns'] ) {
-        appendToDom(word)
-      }
-      
-    })()
-  }
-    
 })
-
-  </script>
+</script>
 
 </html>
