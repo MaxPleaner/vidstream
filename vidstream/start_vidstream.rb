@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 # Gem dependencies
 require 'headless'               # A virtual X display
 require 'selenium-webdriver'     # A virtual Firefox browser
