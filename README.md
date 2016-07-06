@@ -4,6 +4,7 @@ A voice-controlled browser within the browser
 ### About
 
 The code is split up into two groups:
+
 1. The sinatra server (residing in `/server`)
 2. The vidstream process (in `/vidstream`)
 
