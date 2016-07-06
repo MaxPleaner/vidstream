@@ -1,2 +1,4 @@
 .byebug_history
 public/*.mp4
+
+vidstream.sqlite3
