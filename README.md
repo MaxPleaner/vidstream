@@ -33,6 +33,8 @@ Code organization:
 
 Hopefully the comments in the source should give enough explanation to understand what's going on.
 
+A small part of this project was extracted into a gem: [sentence_interpreter](http://github.com/maxpleaner/sentence_interpreter). This gem takes a user-provided lexicon and parses sentences into verb-noun phrases according to it. 
+
 ### Usage
 
   Install the dependencies, then run `ruby start_server.rb
