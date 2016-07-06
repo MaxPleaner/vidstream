@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 
 # gems
 require 'sinatra/base'      # webserver
