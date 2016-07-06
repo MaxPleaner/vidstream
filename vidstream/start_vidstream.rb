@@ -7,17 +7,16 @@ require 'byebug'                 # A debugger
 require 'securerandom'           # A random string generator
 require 'sentence_interpreter'   # A sentence parsing gem I made
 require 'data_mapper'            # An ORM
-require 'eventmachine'           # An event loop, used for Faye pub-sub
 
 # Local file dependencies
 (require_relative "./lib/monkeypatches.rb").then_require_from_lib([
   './headless_gui.rb',       # Virtual X display and Firefox browser
   './vidstream.rb',          # Captures video
   (require_relative './lib/commands.rb').then_require_from_lib([
-    './command_processor.rb' # Parses and executes incoming nouns
+    './command_processor.rb' # Parses and executes incoming commands
   ]),
   (require_relative './lib/database.rb').then_require_from_lib([
-    './lexicon.rb',         # Map verbs and nouns to procs
+    './lexicon.rb',         # Sync in-memory proc lexicon with database definitions
     './seeds.rb'            # Some sample data
   ]),
 ])
@@ -57,9 +56,7 @@ headless_gui = HeadlessGUI.new(keep_alive=true) do |headless_gui|
     # Interpret commands and run them on the headless GUI
     loop do
       
-      # The first word of any input is considered the "meta command".
-      # This determines how the rest of the input's words are parsed and what the output it.
-      # See vidstream/lib/command_processor.rb for more details.
+      # See vidstream/lib/command_processor.rb
       puts $command_processor.process_original_command(gets.chomp)
       
     end
