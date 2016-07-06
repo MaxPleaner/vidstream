@@ -1,8 +1,17 @@
+
+# ---------
+# Command Processor:
+# takes a string command and decides what to do with it.
+# ---------
+
 require 'active_support/all'
 require 'json'
 
 class CommandProcessor
   
+  include Commands # see vidstream/lib/commands.rb for command definitions
+  
+  # initialized with already-running headless, driver, and vidstream clients
   attr_reader :headless, :driver, :vidstream
   def initialize(headless, driver, vidstream)
     @headless = headless
@@ -10,50 +19,24 @@ class CommandProcessor
     @vidstream = vidstream
   end
 
+  # The 'launch' command:
+  # takes a string, parses commands from it, and runs the command
   def process_original_command(original_command='')
-    # byebug
-    parse_and_call_commands(original_command)
-  end
-
-  def parse_and_call_commands(original_command)
+    
+    # Split the command at whitespace
     command_parts = original_command.split(" ")
+    
+    # The first word is the 'metacommand', and determines how the rest of the command should be interpreted
     metacommand = command_parts.shift
     return_val = case metacommand
     when "show_lexicon"
-      "#{NounLexicon}#{VerbLexicon}".gsub("\n", " ")
+      show_lexicon
     when "browser_cmd"
-      video_path = "public/#{SecureRandom.urlsafe_base64}.mp4"
-      vidstream.capture_video(video_path) do
-        parsed_commands = SentenceInterpreter.interpret(command_parts.join(" "))
-        parsed_commands.each do |command|
-          verb = command[:verb].to_sym
-          nouns = command[:nouns]
-          Lexicon[:verbs][verb]&.call(*nouns) rescue $driver.raise_error("Error. Verb: #{verb}, nouns: #{nouns}", nil)
-        end
-      end
-      video_path
+      browser_cmd(command_parts)
     when "add_word"
-      type = command_parts.shift
-      name = command_parts.shift
-      action = command_parts.shift
-      attrs = { name: name, action: action }
-      record_class = type.capitalize.constantize
-      sleep 1 # # wait until server creates record
-      matching_record = record_class.first(name: name)
-      new_word = matching_record&.update(attrs) || record_class.create(attrs)
-      Lexicon.reload
-      Lexicon.copy_self_to(verbs: VerbLexicon, nouns: NounLexicon)
-      "#{new_word.attributes}".gsub("\n", " ")
+      add_word(command_parts)
     when "remove_word"
-      type = command_parts.shift
-      name = command_parts.shift
-      record_class = type.capitalize.constantize
-      sleep 1; # wait until server creates record
-      matching_record = record_class.first(name: name)
-      matching_record&.destroy
-      Lexicon.reload
-      Lexicon.copy_self_to(verbs: VerbLexicon, nouns: NounLexicon)
-      "#{matching_record&.attributes} ".gsub("\n", " ")
+      remove_word(command_parts)
     else
       "invalid metacommand: #{metacommand}. Valid metacommands: #{valid_metacommands_string}"
     end

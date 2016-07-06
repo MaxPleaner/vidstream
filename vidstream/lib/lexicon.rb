@@ -1,12 +1,16 @@
+
 # Lexicon object is a hash which has singleton methods added to it.
 # The actual definitions are stored in the database.
-# It is initialized with all existing definitions.
-# Create, Update, and Destroy hooks on the database will update the Lexicon object.
+
+# The lexicons used by sentence_interpreter are VerbLexicon and NounLexicon.
+# To update the sentence_interpreter, first call Lexicon.reload to get the state from the database
+# then use Lexicon.copy_self_to(verbs: VerbLexicon, nouns: NounLexicon)
 
 Lexicon = {}
 Lexicon[:verb_class] = Verb
 Lexicon[:noun_class] = Noun
 
+# Lexicon.reload will load the database's state into the Lexicon object
 Lexicon.define_singleton_method(:reload) do
   delete Lexicon[:verbs]
   delete Lexicon[:nouns]
@@ -16,6 +20,8 @@ Lexicon.define_singleton_method(:reload) do
     end
   end
 end
+
+# Get the initial state from the database
 Lexicon.reload
 
 # Lexicon.get_noun calls the proc for a noun
@@ -32,15 +38,4 @@ end
 Lexicon.define_singleton_method(:copy_self_to) do |objects|
   self[:verbs].each { |name, func| objects[:verbs][name.to_sym] = func }
   self[:nouns].each { |name, func| objects[:nouns][name.to_sym] = func }
-end
-
-# Plug into the database hooks.
-# Forward the results to other listeners.
-["verb", "noun"].each do |word_type|
-  Lexicon[:"#{word_type}_class"].define_singleton_method(:custom_save_hook) do |record|
-    Lexicon[:on_create_or_update_hook]&.call(word_type, record)
-  end
-  Lexicon[:"#{word_type}_class"].define_singleton_method(:custom_destroy_hook) do |record|
-    Lexicon[:on_destroy_hook]&.call(word_type, record)
-  end
 end

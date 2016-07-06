@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html>
+
 <head>
   <title>Video.js | HTML5 Video Player</title>
   <script src="https://code.jquery.com/jquery-2.x-git.min.js"></script>
 </head>
-
 
   <body>
   
@@ -43,11 +44,12 @@
 
   </body>
 
-  <script type="text/javascript">
-  var recognition = new webkitSpeechRecognition();
+<script type="text/javascript">
 
 $(function(){
 
+  window.recognition = new webkitSpeechRecognition();
+  
   $("#speakNow").hide()
   
   function SetVideoSrc(filepath) {

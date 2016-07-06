@@ -1,56 +1,54 @@
-require 'sinatra/base'
-require 'sinatra-websocket'
-require 'pty'
-require 'expect'
-require 'data_mapper'
-require 'eventmachine'
-require 'byebug'
-require 'faye'
 
-require "./server/external_command_runner"
-require "./server/sinatra_server"
-require "./server/websockets_api"
-require "./server/database"
-require "./server/faye_client"
+# gems / "the party"
+require 'sinatra/base'      # faithful webserver
+require 'sinatra-websocket' # realtime
+require 'data_mapper'       # Database ORM
+require 'eventmachine'      # concurrent process handler
+require 'byebug'            # debugger
 
-# Start Faye Server
-# FayeProcess = Thread.new { `cd faye && rackup` }
-FayeProcess = Thread.new {}
-at_exit { FayeProcess.kill }
+# stdlib
+require 'pty'    # virtual process
+require 'expect' # timeout virtual process
 
-begin
+require "./server/external_command_runner" # runs vidstream command
+require "./server/sinatra_server"          # runs sinatra server
+require "./server/websockets_api"          # server-side websocket events
+require "./server/database"                # database
 
-FayeClient.start
-
+# Run this block if the script is executed directly (not required)
 if __FILE__ == $0
 
-  vidstream_cmd = ExternalCommandRunner::VidStreamCmd
+  # An external command to open the vidstream program
+  vidstream_cmd = ExternalCommandRunner::VidStreamCmds
   
+  # Run the external program and maintain access to its STDIN and STDOUT
   ExternalCommandRunner.with_process_io(vidstream_cmd) do |input, output|
     $vidstream_io = [input, output]
+    
+    # Define a sinatra app in the modular style
     class MyApp < Sinatra::Base
       set :server, 'thin'
       set :sockets, []
+      
+      # only one route - "/"
       get '/' do
         if request.websocket?
+          
+          # The client has requested a websocket connection
+          
+          # Init the server-side websocket listeners, which act as controllers here.
+          # See server/websocket_api.rb
           SinatraServer.init_websocket(request, settings, $vidstream_io)
+          
         else
+          
+          # The client has requested a html page
           erb :root
+          
         end
       end
     end
+    # Start the Sinatra server
     MyApp.run!
   end
-
-
-end
-
-rescue StandardError => e
-  puts e
-  puts e.message
-  puts e.backtrace
-  
-ensure
-  FayeProcess.kill
-  
 end
